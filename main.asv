@@ -1,3 +1,5 @@
+% This file is the project entry point
+
 clc;
 clear;
 close all;
@@ -7,51 +9,41 @@ showdebug = false;
 in_file = 'classroom.png';
 out_file = 'classroom_scan.png';
 
-% cam = webcam('FaceTime');
-% img = snapshot(cam);
-% img = imread('ikea.jpg');
 img = imread(in_file);
 
 % Convert to greyscale
 img_bw = uint8(rgb2gray(img));
 [img_bin, thres] = binaryImage2(img_bw);
-img_bin2 = uint8(morphCloseImage(img_bin)) .* 255;
-img_eq = histeq(img_bw);
 
 if (showdebug)
     figure;
-    montage({img_bw, img_eq, img_bin, img_bin2},'Size',[1 4]);
-    title("Grayscale, Histeq, Binary");
+    montage({img_bw, img_bin},'Size',[1 2]);
 end
 
 
-%% Apply sobel edge detection filter
+%% Apply edge detection filter (note: sobel is not suitable because lines could be diagonal)
 
-img_g = edge_sobel(img_bin, thres);
+% img_g = edge_sobel(img_bin, thres);
 img_grad = edge_grad(img_bin, thres);
-img_g2 = edge_sobel(img_bin2, thres);
-img_grad2 = edge_grad(img_bin2, thres);
 
-if (showdebug)
-    figure;
-    imshowpair(img_g, img_grad, 'montage');
-    figure;
-    montage({img_g, img_grad, img_g2, img_grad2},'Size',[2 2]);
-end
+% if (showdebug)
+figure;
+montage({ ...
+    img_grad, edge(img_bin), edge(img_bin, 'Prewitt'), edge(img_bin, 'Roberts'), ...
+    edge(img_bin, 'approxcanny'), edge(img_bin, 'log')}, ...
+    'Size',[2 3]);
+% end
 
 %% Hough transform
-[H, T, R] = hough(img_grad,'RhoResolution',3 ,'Theta', -90:0.2:89);
-% figure;
+img_grad = edge(img_bin, 'log');
+[H, T, R] = hough(img_grad,'RhoResolution', 3 ,'Theta', -90:0.2:89);
 
 % Make bright spots more visible
-% H = H .^ 2;
+H = H .^ 2;
 
-% imshow(imresize(H, [1200 1200], 'nearest'), []);
-% H = imgaussfilt(H, 2);
 if (showdebug)
     imshow(H, []);
-end
-% imshow(imadjust(rescale(H)),'XData',T,'YData',R);
+% end
 
 %% Find points from H
 ratio = 0.7;

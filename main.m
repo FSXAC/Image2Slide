@@ -1,101 +1,107 @@
+% This file is the project entry point
+
 clc;
 clear;
 close all;
 
-showdebug = false;
+% Parameters
+SHOW_DEBUG = false;
+HOUGH_RHO_RES = 1;
+HOUGH_THETA_RES = 0.2;
+
 
 in_file = 'classroom.png';
 out_file = 'classroom_scan.png';
 
-% cam = webcam('FaceTime');
-% img = snapshot(cam);
-% img = imread('ikea.jpg');
 img = imread(in_file);
 
 % Convert to greyscale
 img_bw = uint8(rgb2gray(img));
 [img_bin, thres] = binaryImage2(img_bw);
-img_bin2 = uint8(morphCloseImage(img_bin)) .* 255;
-img_eq = histeq(img_bw);
 
-if (showdebug)
+if (SHOW_DEBUG)
     figure;
-    montage({img_bw, img_eq, img_bin, img_bin2},'Size',[1 4]);
-    title("Grayscale, Histeq, Binary");
+    montage({img_bw, img_bin},'Size',[1 2]);
 end
 
 
-%% Apply sobel edge detection filter
-
-img_g = edge_sobel(img_bin, thres);
+%% Apply edge detection filter (note: sobel is not suitable because lines could be diagonal)
 img_grad = edge_grad(img_bin, thres);
-img_g2 = edge_sobel(img_bin2, thres);
-img_grad2 = edge_grad(img_bin2, thres);
-
-if (showdebug)
-    figure;
-    imshowpair(img_g, img_grad, 'montage');
-    figure;
-    montage({img_g, img_grad, img_g2, img_grad2},'Size',[2 2]);
-end
 
 %% Hough transform
-[H, T, R] = hough(img_grad,'RhoResolution',3 ,'Theta', -90:0.2:89);
-% figure;
+[H, T, R] = hough(img_grad,'RhoResolution', HOUGH_RHO_RES ,'Theta', -90:HOUGH_THETA_RES:89);
 
 % Make bright spots more visible
-% H = H .^ 2;
+H = H .^ 2;
+imshow(H, []);
 
-% imshow(imresize(H, [1200 1200], 'nearest'), []);
-% H = imgaussfilt(H, 2);
-if (showdebug)
-    imshow(H, []);
-end
-% imshow(imadjust(rescale(H)),'XData',T,'YData',R);
-
-%% Find points from H
-ratio = 0.7;
-if (showdebug)
-    figure;
-end
-while ratio > 0.1
-    ratio = ratio - 0.01;
+%% Find points from H (1.75 seconds)
+% ratio = 0.7;
+% while ratio > 0.1
+%     ratio = ratio - 0.01;
     
-    mask = H > ratio*max(H(:));
-    mask = bwmorph(mask, 'dilate', 15);
+%     mask = H > ratio*max(H(:));
+%     mask = bwmorph(mask, 'dilate', 15);
 
-    if (showdebug)
-        imshow(mask, []);
-    end
+%     if (SHOW_DEBUG)
+%         imshow(mask, []);
+%     end
+%     mask = bwmorph(mask, 'shrink', Inf);
+%     mask = double(mask);
+
+%     [r_idx, t_idx] = find(mask);
+%     peaks = [r_idx, t_idx];
+    
+%     if size(peaks, 1) >= 4
+%         break
+%     end
+% end
+
+%% Find points from H (binary search) (0.7 seconds)
+ratio_hi = 1;
+ratio_lo = 0;
+epoch = 0;
+while epoch < 10
+    ratio = (ratio_hi - ratio_lo) / 2 + ratio_lo;
+
+    mask = H > ratio * max(H(:));
+    mask = bwmorph(mask, 'dilate', 15);
     mask = bwmorph(mask, 'shrink', Inf);
     mask = double(mask);
-    % imshow(mask, []);
 
     [r_idx, t_idx] = find(mask);
     peaks = [r_idx, t_idx];
-    
-    if size(peaks, 1) >= 4
+
+    if size(peaks, 1) > 4
+        % if number of peaks > 4 then we need to decrease high
+        ratio_hi = ratio;
+    elseif size(peaks, 1) < 4
+        ratio_lo = ratio;
+    else
         break
     end
+    
+    epoch = epoch + 1;
 end
-% peaks = houghpeaks(H, 5);
+
+return;
 
 %% Find peak points furtherest apart
-opts = nchoosek(1:size(peaks, 1), 4);
-max_area = 0;
-max_peaks = peaks;
-for i = 1:size(opts, 1)
-    P = zeros(4, 2);
-    for j = 1:4
-        P(j, :) = peaks(opts(i, j), :);
-    end
-    [hull, area] = convhull(P);
+% opts = nchoosek(1:size(peaks, 1), 4);
+% max_area = 0;
+% max_peaks = peaks;
+% for i = 1:size(opts, 1)
+%     P = zeros(4, 2);
+%     for j = 1:4
+%         P(j, :) = peaks(opts(i, j), :);
+%     end
+%     [hull, area] = convhull(P);
     
-    if area > max_area
-        max_peaks = P;
-    end
-end
-peaks = max_peaks;
+%     if area > max_area
+%         max_peaks = P;
+%     end
+% end
+% peaks = max_peaks;
 
 %% Draw line on image
 figure;
@@ -167,7 +173,7 @@ wx = ref.XWorldLimits(1);
 wy = ref.YWorldLimits(1);
 
 % img_rectified = imwarp(img, 
-if (showdebug)
+if (SHOW_DEBUG)
     figure;
     imshow(img_rectified);
     hold on
@@ -186,12 +192,12 @@ for i = 1:size(points, 1)
     
     new_points = [new_points; xx, yy];
 
-    if (showdebug)
+    if (SHOW_DEBUG)
         plot(xx, yy, 'g*', 'MarkerSize', 10)
     end
 end
 
-if (showdebug)
+if (SHOW_DEBUG)
     hold off
 end
 
@@ -206,7 +212,7 @@ maxnp = max(new_points);
 img_cropped = imcrop(img_rectified, [minnp, maxnp - minnp]);
     img_cropped_grey = rgb2gray(img_cropped);
 
-if (showdebug)
+if (SHOW_DEBUG)
     figure;
     imshowpair(img_cropped, img_cropped_grey, 'montage');
 end
