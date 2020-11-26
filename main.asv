@@ -5,14 +5,14 @@ clear;
 close all;
 
 % Parameters
-in_file = 'ieee_xs.jpg';
+in_file = 'ieee_sm.jpg';
 out_file = 'classroom_scan.png';
 
-img = imread(in_file);
-
 SHOW_DEBUG = false;
-HOUGH_RHO_RES = 1 + floor(max(size(img)) / 1000);
+HOUGH_RHO_RES = ;
 HOUGH_THETA_RES = 0.2;
+
+img = imread(in_file);
 
 % Convert to greyscale
 img_bw = uint8(rgb2gray(img));
@@ -28,11 +28,8 @@ img_edge = edge(img_bw);
 % Make bright spots more visible
 H = H .^ 2;
 
-% imshow(imgradient(H), []);
-% return;
-
 % Find points from H (binary search) (0.7 seconds vs 1.75s of old method)
-peaks = hough_search(H, 4, 50, 5);
+peaks = hough_search(H, 4, 50);
 lines = houghlines(img_bw, T, R, peaks);
 
 line_verts = hough_lines2verts(lines);
@@ -40,7 +37,7 @@ points = intersection_points(line_verts, img);
 draw_detection(img, line_verts, points);
 
 %% rectify image
-[img_rectified, transformation, ref] = rectify_image(img, points, 16/9);
+[img_rectified, transformation, ref] = rectify_image(img, points, 4/3);
 
 %% crop the rectified image
 img_cropped = crop2doc(img_rectified, transformation, ref, points);
@@ -101,7 +98,7 @@ function img = edge_grad(I, thres)
     img(img < thres) = 0;
 end
 
-function points = hough_search(H, n, max_epoch, dilate_factor)
+function points = hough_search(H, n, max_epoch)
     ratio_hi = 1.0;
     ratio_lo = 0.0;
     epoch = 0;
@@ -110,7 +107,7 @@ function points = hough_search(H, n, max_epoch, dilate_factor)
         ratio = (ratio_hi - ratio_lo) / 2 + ratio_lo;
 
         mask = H > ratio * max(H(:));
-        mask = bwmorph(mask, 'dilate', dilate_factor);
+        mask = bwmorph(mask, 'dilate', 15);
         mask = bwmorph(mask, 'shrink', Inf);
         mask = double(mask);
 
