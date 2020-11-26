@@ -42,77 +42,20 @@ line_verts = hough_lines2verts(lines);
 points = intersection_points(line_verts, img);
 draw_detection(img, line_verts, points);
 
-%%
-% Control (original image)
-h = size(img, 1);
-w = 4/3 * h;
-% w = 16/9 * h;
-C = [0, 0;
-     w, 0;
-     0, h;
-     w, h];
+%% rectify image
+[img_rectified, transformation, ref] = rectify_image(img, points, 4/3);
 
-tf = fitgeotrans(points, C, 'projective');
-[img_rectified, ref] = imwarp(img, tf);
-
-% tf2 = affine2d([1 0 0; 0 1 0; 20 30 1]);
-
-wx = ref.XWorldLimits(1);
-wy = ref.YWorldLimits(1);
-
-% img_rectified = imwarp(img, 
-if (SHOW_DEBUG)
-    figure;
-    imshow(img_rectified);
-    hold on
-end
-
-% Control points on the new graph
-new_points = [];
-for i = 1:size(points, 1)
-    x_i = points(i, 1);
-    y_i = points(i, 2);
-    
-    [x_o, y_o] = tf.transformPointsForward(x_i, y_i);
-    
-    xx = round(x_o - wx);
-    yy = round(y_o - wy);
-    
-    new_points = [new_points; xx, yy];
-
-    if (SHOW_DEBUG)
-        plot(xx, yy, 'g*', 'MarkerSize', 10)
-    end
-end
-
-if (SHOW_DEBUG)
-    hold off
-end
-
-%% don't care about anything else lol
-
-minnp = min(new_points);
-maxnp = max(new_points);
-
-% img_bl(1:minnp(2),:,:) = 0;
-% img_bl(maxnp(2):ref.ImageSize(1),:,:) = 0;
-
-img_cropped = imcrop(img_rectified, [minnp, maxnp - minnp]);
-    img_cropped_grey = rgb2gray(img_cropped);
-
-if (SHOW_DEBUG)
-    figure;
-    imshowpair(img_cropped, img_cropped_grey, 'montage');
-end
+%% crop the rectified image
+img_cropped = crop2doc(img_rectified, transformation, ref, points);
 
 %% Document segmentation (TODO: use the rice example from HW4)
-img_doc = imadjust(img_cropped_grey);
+img_doc = imadjust(rgb2gray(img_cropped));
 img_doc = imbinarize(img_doc, 'adaptive', 'Sensitivity', 0.630000, 'ForegroundPolarity', 'bright');
 figure;
 imshow(img_doc);
 
 %% Save the image
-imwrite(img_doc, outfile);
+imwrite(img_doc, out_file);
 
 %% Functions
 
@@ -222,4 +165,42 @@ function draw_detection(img, line_verts, points)
         plot(points(k, 1), points(k, 2), 'r*');
     end
     hold off
+end
+
+% Rectifies the image -- returns the rectified image as well as reference information
+function [img_rectified, transformation, ref] = rectify_image(img, control_points, aspect_ratio)
+    h = size(img, 1);
+    w = aspect_ratio * h;
+    C = [0, 0;
+        w, 0;
+        0, h;
+        w, h];
+
+    transformation = fitgeotrans(control_points, C, 'projective');
+    [img_rectified, ref] = imwarp(img, transformation);
+end
+
+% Crop the input image to the document only
+function img_cropped = crop2doc(img, transformation, ref, points)
+    wx = ref.XWorldLimits(1);
+    wy = ref.YWorldLimits(1);
+
+    % Control points on the new graph
+    new_points = points;
+    for k = 1:size(points, 1)
+        x_i = points(k, 1);
+        y_i = points(k, 2);
+        
+        [x_o, y_o] = transformation.transformPointsForward(x_i, y_i);
+        
+        xx = round(x_o - wx);
+        yy = round(y_o - wy);
+        
+        new_points(k, :) = [xx, yy];
+    end
+
+    minnp = min(new_points);
+    maxnp = max(new_points);
+
+    img_cropped = imcrop(img, [minnp, maxnp - minnp]);
 end
