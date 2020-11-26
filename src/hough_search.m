@@ -26,7 +26,7 @@ function points = hough_search(H, n, max_epoch, dilate_factor)
     end
     
     if epoch >= max_epoch
-        error('Max epoch too low');
+        points = houghpeaks(H, n);
     end
 end
 

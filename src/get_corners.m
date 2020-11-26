@@ -9,9 +9,9 @@ function norm_points = get_corners(I_bw)
     HOUGH_THETA_RES = 0.2;
     
     [H, T, R] = hough(I_edge, 'RhoResolution', HOUGH_RHO_RES ,'Theta', -90:HOUGH_THETA_RES:89);
-    H = H .^ 2;
+%     H = H .^ 2;
 
-    peaks = hough_search(H, 4, 50, 5);
+    peaks = hough_search(H, 4, 10, 5);
     lines = houghlines(I_bw, T, R, peaks);
 
     line_verts = hough_lines2verts(lines);
@@ -23,7 +23,7 @@ function norm_points = get_corners(I_bw)
     npoints(:, 2) = points(:, 2) ./ size(I_bw, 1); % divide by height
 
     % Sort the coordinates from top left to bottom right
-    tp = norm_points - 0.5;
+    tp = npoints - 0.5;
     
     t = zeros([4, 2]);
     for j = 1:size(tp, 1)

@@ -5,8 +5,8 @@ function [img_rectified, transformation, ref] = rectify_image(img, control_point
     w = aspect_ratio * h;
     C = [0, 0;
         w, 0;
-        0, h;
-        w, h];
+        w, h;
+        0, h];
 
     transformation = fitgeotrans(control_points, C, 'projective');
     [img_rectified, ref] = imwarp(img, transformation);

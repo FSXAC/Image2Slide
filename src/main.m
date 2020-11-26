@@ -5,21 +5,27 @@ clear;
 close all;
 
 % Parameters
-in_file = 'img/ieee_xs.jpg';
+in_file = 'img/ipad.jpg';
 out_file = 'classroom_scan.png';
 
 img = imread(in_file);
+img_xs = imresize(img, [200 NaN]);
+% img = imresize(img, [600, NaN]);
 
 SHOW_DEBUG = false;
 
 % Convert to greyscale
-img_bw = uint8(rgb2gray(img));
+img_bw = uint8(rgb2gray(img_xs));
 [img_bin, thres] = binaryImage2(img_bw);
 
 npoints = get_corners(img_bw);
 
+points = zeros(size(npoints));
+points(:, 1) = npoints(:, 1) .* size(img, 2);
+points(:, 2) = npoints(:, 2) .* size(img, 1);
+
 %% rectify image
-[img_rectified, transformation, ref] = rectify_image(img, points, 16/9);
+[img_rectified, transformation, ref] = rectify_image(img, points, 4/3);
 
 %% crop the rectified image
 img_cropped = crop2doc(img_rectified, transformation, ref, points);
@@ -27,7 +33,9 @@ img_cropped = crop2doc(img_rectified, transformation, ref, points);
 %% Document segmentation (TODO: use the rice example from HW4)
 img_cropped_grey = rgb2gray(img_cropped);
 img_doc = imadjust(img_cropped_grey);
-img_doc = imbinarize(img_doc, 'adaptive', 'Sensitivity', 0.630000, 'ForegroundPolarity', 'bright');
+img_doc = imbinarize(img_doc, 'adaptive', 'Sensitivity', 0.67, 'ForegroundPolarity', 'bright');
+img_doc = imclose(img_doc, strel('disk', 6, 0));
+img_doc_xs = imresize(img_doc, [200 NaN]);
 figure;
 imshow(img_doc);
 
@@ -55,7 +63,7 @@ figure;
 imshow(uint8(img_cropped_c));
 
 % Apply segment boost
-img_boosted = img_cropped_c + (img_doc - 0.2) * 60;
+img_boosted = img_cropped_c + (img_doc - 0.01) * 255;
 figure;
 imshow(uint8(img_boosted));
 
