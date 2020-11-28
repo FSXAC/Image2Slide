@@ -5,7 +5,7 @@ clear;
 close all;
 
 % Clear output
-rmdir('output/*', 's');
+% rmdir('output/*', 's');
 
 % Use alpha output for image pieces
 EXPORT_ALPHA_MASK = true;

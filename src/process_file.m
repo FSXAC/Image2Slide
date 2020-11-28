@@ -23,8 +23,13 @@ function process_file(input_file, ds1, ds2, alpha)
     img_cropped = crop2doc(img_rectified, transformation, ref, points);
 
     % document segmentation
-    img_cropped_grey = rgb2gray(img_cropped);
-    img_doc = imbinarize(img_cropped_grey);
+    ir = imbinarize(img_cropped(:, :, 1));
+    ig = imbinarize(img_cropped(:, :, 2));
+    ib = imbinarize(img_cropped(:, :, 3));
+    img_doc = logical(ir .* ig .* ib);
+    
+    % img_cropped_grey = rgb2gray(img_cropped);
+    % img_doc = imbinarize(img_cropped_grey);
 %     img_doc = imadjust(img_cropped_grey);
 %     img_doc = imbinarize(img_doc, 'adaptive', 'Sensitivity', 0.67, 'ForegroundPolarity', 'bright');
 %     img_doc = imclose(img_doc, strel('disk', 6, 0));
