@@ -1,11 +1,13 @@
 % process a single input input image
 
-function process_file(input_file, alpha)
+function process_file(input_file, ds1, ds2, alpha)
     [~, infile, ~] = fileparts(input_file);
 
 
     img = imread(input_file);
-    img_xs = imresize(img, [200, NaN]);
+    low_img_h = round(size(img, 1) * ds1);
+    low_img_h2 = round(size(img, 1) * ds2);
+    img_xs = imresize(img, [low_img_h, NaN]);
 
     % to greyscale for boundary detection
     img_bw = uint8(rgb2gray(img_xs));
@@ -27,8 +29,8 @@ function process_file(input_file, alpha)
 %     img_doc = imbinarize(img_doc, 'adaptive', 'Sensitivity', 0.67, 'ForegroundPolarity', 'bright');
 %     img_doc = imclose(img_doc, strel('disk', 6, 0));
 
-    img_doc_xs = imresize(img_doc, [200 NaN]);
-    img_cropped_xs = imresize(img_cropped, [200 NaN]);
+    img_doc_xs = imresize(img_doc, [low_img_h2 NaN]);
+    img_cropped_xs = imresize(img_cropped, [low_img_h2 NaN]);
 
     % equalize histogram
     img_bg_seg = repmat(uint8(img_doc_xs), 1, 1, 3) .* img_cropped_xs;
@@ -39,7 +41,8 @@ function process_file(input_file, alpha)
     img_boosted = img_cropped_c + (img_doc - 0.01) * 255;
 
     % ROI
-    doc_roi = imclearborder(imcomplement(imerode(img_doc_xs, strel('rectangle', [4 15]))));
+    doc_roi = imdilate(imclearborder(imcomplement(img_doc_xs)), strel('rectangle', [4 15]));
+%     doc_roi = imclearborder(imcomplement(imerode(img_doc_xs, strel('rectangle', [4 15]))));
     doc_rp = regionprops(doc_roi);
     bboxes = [doc_rp.BoundingBox];
     doc_bbox_xs = reshape(bboxes, 4, size(bboxes, 2) / 4);

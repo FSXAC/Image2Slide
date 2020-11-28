@@ -5,7 +5,7 @@ clear;
 close all;
 
 % Parameters
-in_file = 'input/3.jpeg';
+in_file = 'input/1.jpeg';
 
 img = imread(in_file);
 img_xs = imresize(img, [200 NaN]);
@@ -68,7 +68,7 @@ img_boosted = img_cropped_c + (img_doc - 0.01) * 255;
 
 %% Region of interest analysis
 % Generate map
-doc_roi = imclearborder(imcomplement(imerode(img_doc_xs, strel('rectangle', [4 15]))));
+doc_roi = imcomplement(imerode(img_doc_xs, strel('rectangle', [4 15])));
 doc_rp = regionprops(doc_roi);
 bboxes = [doc_rp.BoundingBox];
 doc_bbox_xs = reshape(bboxes, 4, size(bboxes, 2) / 4);

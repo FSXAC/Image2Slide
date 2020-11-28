@@ -16,7 +16,9 @@ function norm_points = get_corners(I_bw)
 
     line_verts = hough_lines2verts(lines);
     points = intersection_points(line_verts, I_bw);
-    draw_detection(I_bw, line_verts, points);
+
+    % debug only
+    % draw_detection(I_bw, line_verts, points);
 
     npoints = zeros(size(points));
     npoints(:, 1) = points(:, 1) ./ size(I_bw, 2); % divide by width

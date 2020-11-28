@@ -3,6 +3,8 @@ import os
 from pptx import Presentation
 from pptx.util import Inches
 
+USE_IMG_BG = False
+
 p = Presentation()
 
 TITLE_LAYOUT = p.slide_layouts[0]
@@ -40,10 +42,11 @@ for fitem in sorted(os.listdir(root_path)):
         slide = p.slides.add_slide(CONTENT_LAYOUT)
 
         # add background
-        slide.shapes.add_picture(
-            os.path.join(sub_path, 'bg.jpg'),
-            0, 0, swidth, sheight
-        )
+        if (USE_IMG_BG):
+            slide.shapes.add_picture(
+                os.path.join(sub_path, 'bg.jpg'),
+                0, 0, swidth, sheight
+            )
 
         with open(os.path.join(sub_path, 'meta.csv')) as metacsv:
             # meta.csv contains all the regions in x,y,w,h form
