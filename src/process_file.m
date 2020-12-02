@@ -42,8 +42,11 @@ function process_file(input_file, ds1, ds2, alpha)
     img_cropped_c = bump_equalize(double(img_cropped), img_bg_seg, 240);
 
     % boost contrast
-    img_cropped_c = img_cropped_c .* 2.0 - 255;
-    img_boosted = img_cropped_c + (img_doc - 0.01) * 255;
+%     img_cropped_c = img_cropped_c .* 2.0 - 255;
+%     img_boosted = img_cropped_c + (img_doc - 0.01) * 255;
+    BOOST_FACTOR = 70;
+    BOOST_BIAS = 0.4;
+    img_boosted = uint8(img_cropped_c + (img_doc * BOOST_FACTOR) - BOOST_BIAS * BOOST_FACTOR);
 
     % ROI
     doc_roi = imdilate(imclearborder(imcomplement(img_doc_xs)), strel('rectangle', [4 15]));

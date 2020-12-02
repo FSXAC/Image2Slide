@@ -11,7 +11,7 @@ function norm_points = get_corners(I_bw)
     [H, T, R] = hough(I_edge, 'RhoResolution', HOUGH_RHO_RES ,'Theta', -90:HOUGH_THETA_RES:89);
 %     H = H .^ 2;
 
-    peaks = hough_search(H, 4, 10, 5);
+    peaks = hough_search(abs(imgradient(H)), 4, 10, 5);
     lines = houghlines(I_bw, T, R, peaks);
 
     line_verts = hough_lines2verts(lines);
