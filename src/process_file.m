@@ -1,13 +1,12 @@
 % process a single input input image
 
-function process_file(input_file, ds1, ds2, alpha)
+function process_file(input_file, ds1, ds2, alpha, aspect_ratio)
     [~, infile, ~] = fileparts(input_file);
-
 
     img = imread(input_file);
     low_img_h = round(size(img, 1) * ds1);
     low_img_h2 = round(size(img, 1) * ds2);
-    img_xs = imresize(img, [low_img_h, NaN]);
+    img_xs = imresize(img, [low_img_h, low_img_h]);
 
     % to greyscale for boundary detection
     img_bw = uint8(rgb2gray(img_xs));
@@ -17,7 +16,7 @@ function process_file(input_file, ds1, ds2, alpha)
     points(:, 2) = npoints(:, 2) .* size(img, 1);
 
     % rectify image
-    [img_rectified, transformation, ref] = rectify_image(img, points, 4/3);
+    [img_rectified, transformation, ref] = rectify_image(img, points, aspect_ratio);
 
     % crop
     img_cropped = crop2doc(img_rectified, transformation, ref, points);

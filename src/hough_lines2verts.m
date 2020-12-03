@@ -7,6 +7,10 @@ function line_verts = hough_lines2verts(lines)
         y1 = lines(k).point1(2);
         x2 = lines(k).point2(1);
         y2 = lines(k).point2(2);
+
+        if x1 == x2
+            x1 = x1 + 0.1;
+        end
         
         line_verts(k,1,:) = [x1 x2];
         line_verts(k,2,:) = [y1 y2];
